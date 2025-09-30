@@ -333,6 +333,25 @@ def scrape_product_data(url):
 # スプレッドシートからコピーしたデータを解析する関数
 def parse_input_text(input_text):
     import re
+    # If the input doesn't contain quotes (or is just whitespace), treat it as a list of URLs.
+    if '"' not in input_text.strip():
+        starts = [match.start() for match in re.finditer('https?://', input_text)]
+        urls = []
+        for i in range(len(starts)):
+            start_pos = starts[i]
+            end_pos = starts[i+1] if i + 1 < len(starts) else len(input_text)
+            # Strip any whitespace from the extracted URL chunk
+            url = input_text[start_pos:end_pos].strip()
+            if url:
+                urls.append(url)
+
+        products = []
+        for url in urls:
+            # Each URL is a product with an empty catchphrase.
+            products.append({'catchphrases': [''], 'urls': [url]})
+        return products
+
+    # If quotes are present, use the existing logic.
     items = re.findall(r'"(.*?)"', input_text, flags=re.DOTALL)
     products = []
     for item in items:
