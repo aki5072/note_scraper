@@ -333,80 +333,59 @@ def scrape_product_data(url):
 # スプレッドシートからコピーしたデータを解析する関数
 def parse_input_text(input_text):
     import re
-    # If the input doesn't contain quotes (or is just whitespace), treat it as a list of URLs.
-    if '"' not in input_text.strip():
-        starts = [match.start() for match in re.finditer('https?://', input_text)]
-        urls = []
-        for i in range(len(starts)):
-            start_pos = starts[i]
-            end_pos = starts[i+1] if i + 1 < len(starts) else len(input_text)
-            # Strip any whitespace from the extracted URL chunk
-            url = input_text[start_pos:end_pos].strip()
-            if url:
-                urls.append(url)
-
-        products = []
-        for url in urls:
-            # Each URL is a product with an empty catchphrase.
-            products.append({'catchphrases': [''], 'urls': [url]})
-        return products
-
-    # If quotes are present, use the existing logic.
-    items = re.findall(r'"(.*?)"', input_text, flags=re.DOTALL)
     products = []
-    for item in items:
-        product_catchphrases = [] # Catchphrases for all URLs in this product item
-        product_urls = []         # URLs for all URLs in this product item
-        current_catchphrase_buffer = ""
+    current_catchphrase_buffer = ""
+    
+    # 入力を行ごとに分割
+    lines = [l.strip() for l in input_text.split('\n') if l.strip()]
+    
+    for line in lines:
+        # 行内に含まれるURLをすべて見つける
+        url_matches = list(re.finditer(r'https?://[^\s"]+', line))
+        
+        if not url_matches:
+            # URLがなければ、行全体をキャッチコピーバッファに追加
+            current_catchphrase_buffer = (current_catchphrase_buffer + " " + line).strip()
+            continue
 
-        lines = [l.strip() for l in item.split('\n') if l.strip()]
-        for line in lines:
-            url_matches = list(re.finditer(r'https?://[^\s]+', line))
-            if url_matches:
-                # If there's text before the first URL on this line, it's part of the current_catchphrase_buffer
-                # This handles cases like "text URL1 text2 URL2"
-                text_before_first_url = line[0:url_matches[0].start()].strip()
-                if text_before_first_url:
-                    current_catchphrase_buffer = (current_catchphrase_buffer + " " + text_before_first_url).strip()
+        # URLがあれば、処理を開始
+        last_end = 0
+        
+        # URLの前のテキストをキャッチコピーバッファに追加
+        text_before_first_url = line[:url_matches[0].start()].strip()
+        if text_before_first_url:
+            current_catchphrase_buffer = (current_catchphrase_buffer + " " + text_before_first_url).strip()
 
-                last_end = 0
-                for m in url_matches:
-                    # Text between URLs on the same line
-                    text_between_urls = line[last_end:m.start()].strip()
-                    if text_between_urls:
-                        current_catchphrase_buffer = (current_catchphrase_buffer + " " + text_between_urls).strip()
+        # 各URLを処理
+        for m in url_matches:
+            # 前のURLとの間のテキストをキャッチコピーバッファに追加
+            text_between_urls = line[last_end:m.start()].strip()
+            if text_between_urls:
+                 current_catchphrase_buffer = (current_catchphrase_buffer + " " + text_between_urls).strip()
 
-                    url = m.group(0).strip()
-                    url = re.sub(r'[\u3000-\u303F,]+', '', url)
-                    url = url.split(' ')[0].split('　')[0].strip()
+            url = m.group(0).strip()
+            url = re.sub(r'[\u3000-\u303F,]+', '', url)
+            # ダブルクォートや不要な文字を除去
+            url = url.split(' ')[0].split('　')[0].strip().replace('"', '')
+            
+            # バッファ内の不要な文字も除去
+            clean_catchphrase = current_catchphrase_buffer.strip().replace('"', '')
 
-                    product_urls.append(url)
-                    product_catchphrases.append(current_catchphrase_buffer if current_catchphrase_buffer else "")
-                    current_catchphrase_buffer = "" # Reset buffer after associating with a URL
-                    last_end = m.end()
+            # URLを見つけたら、それまでのバッファをキャッチコピーとして商品を追加
+            products.append({
+                'catchphrases': [clean_catchphrase],
+                'urls': [url]
+            })
+            
+            # バッファをリセット
+            current_catchphrase_buffer = ""
+            last_end = m.end()
+            
+        # 最後のURLの後のテキストを、次のキャッチコピーのためにバッファに保存
+        text_after_last_url = line[last_end:].strip()
+        if text_after_last_url:
+            current_catchphrase_buffer = (current_catchphrase_buffer + " " + text_after_last_url).strip()
 
-                # If there's text after the last URL on this line, it should be added to the buffer for the next URL
-                text_after_last_url = line[last_end:].strip()
-                if text_after_last_url:
-                    current_catchphrase_buffer = (current_catchphrase_buffer + " " + text_after_last_url).strip()
-
-            else:
-                # No URL on this line, so it's part of the catchphrase for the next URL
-                current_catchphrase_buffer = (current_catchphrase_buffer + " " + line).strip() if current_catchphrase_buffer else line
-
-        # After processing all lines in an item, if there's any remaining buffer, it's not associated with a URL.
-        # This case might indicate malformed input or a need to handle it differently.
-        # For now, we'll just ensure product_catchphrases and product_urls have the same length.
-        if len(product_catchphrases) < len(product_urls):
-            product_catchphrases += [""] * (len(product_urls) - len(product_catchphrases))
-        elif len(product_urls) < len(product_catchphrases):
-            # This case should ideally not happen with the new logic if URLs are always present after catchphrases.
-            # If it does, it means a catchphrase was accumulated but no URL followed.
-            # For now, we'll truncate extra catchphrases.
-            product_catchphrases = product_catchphrases[:len(product_urls)]
-
-
-        products.append({'catchphrases': product_catchphrases, 'urls': product_urls})
     return products
 
 # 商品URLに UTM パラメータを付与する関数
