@@ -3,9 +3,11 @@ import re
 from re import DOTALL  # DOTALLフラグを明示的にインポート
 import os  # osモジュールを追加
 import random
+import time
 from bs4 import BeautifulSoup, Comment
 from datetime import datetime
 from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -93,8 +95,7 @@ def parse_banner_input(banner_text, selected_date):
 
     return banners
 
-# ChromeDriver のパスを明示的に指定（例: macOSの場合）
-driver_path = "/opt/homebrew/bin/chromedriver"
+# ChromeDriver のパスは webdriver-manager が自動で管理します
 
 # Selenium のオプション設定
 options = Options()
@@ -128,7 +129,7 @@ def scrape_product_data(url):
         # User-Agentを最新に更新
         options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
 
-        service = Service(driver_path)
+        service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
 
         # タイムアウトの設定を調整
@@ -179,6 +180,9 @@ def scrape_product_data(url):
             # ネットワークのアイドル状態を確認
             driver.execute_script("return window.performance.timing.loadEventEnd")
 
+            # JSによるコンテンツ描画を待つために数秒間スリープする
+            time.sleep(5)
+
             # 商品名の取得（複数の方法を試行）
             product_name = ""
             try:
@@ -198,8 +202,10 @@ def scrape_product_data(url):
             # 商品説明の取得（複数の方法を試行）
             description_html = ""
             try:
-                # 複数のセレクタを試行
+                # JS実行によるコンテンツ取得を試みる (スクレイピング対策の回避)
+                description_html = ""
                 selectors = [
+                    ".detailTxt",
                     ".detailExtTxt",
                     ".itemDescription",
                     ".item-description",
@@ -208,22 +214,15 @@ def scrape_product_data(url):
                     ".product-description"
                 ]
 
-                description_element = None
                 for selector in selectors:
                     try:
-                        WebDriverWait(driver, 5).until(
-                            EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-                        )
-                        elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                        if elements:
-                            description_element = elements
+                        js_script = f"return document.querySelector('{selector}').innerHTML;"
+                        content = driver.execute_script(js_script)
+                        if content and content.strip():
+                            description_html = content
                             break
                     except:
                         continue
-
-                if description_element:
-                    descriptions_html = [elem.get_attribute("innerHTML") for elem in description_element if elem.get_attribute("innerHTML")]
-                    description_html = " ".join(descriptions_html)
 
                 if not description_html:
                     raise Exception("商品説明が見つかりません")
