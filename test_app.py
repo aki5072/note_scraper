@@ -1171,7 +1171,7 @@ def generate_html_from_template(template_path, products_data, campaign_date, cam
             )
 
         # 出力ディレクトリの設定
-        output_dir = '/Users/aki5072/Library/Mobile Documents/com~apple~CloudDocs/47_CLUB_メルマガマニュアル/メルマガ原稿'
+        output_dir = '/Users/akiakko0526/Library/Mobile Documents/com~apple~CloudDocs/47_CLUB_メルマガマニュアル/メルマガ原稿'
         filename_suffix = '_ビジュアルver' if is_visual else ''
         base_filename = f'{campaign_date}_WEBCAS{filename_suffix}.html'
         output_path = os.path.join(output_dir, base_filename)
@@ -1460,7 +1460,7 @@ def save_template(template_content, campaign_date, is_visual):
     """HTMLテンプレートを保存する関数"""
     try:
         # 保存先ディレクトリの設定
-        output_dir = '/Users/aki5072/Library/Mobile Documents/com~apple~CloudDocs/47_CLUB_メルマガマニュアル/メルマガ原稿'
+        output_dir = '/Users/akiakko0526/Library/Mobile Documents/com~apple~CloudDocs/47_CLUB_メルマガマニュアル/メルマガ原稿'
 
         # ファイル名の生成
         filename_suffix = '_ビジュアルver' if is_visual else ''
@@ -2074,7 +2074,7 @@ if st.button("生成"):
         if "WEBCAS" in campaign_type:
             print("=== HTMLファイル生成処理開始 ===")
             st.write("🔍 HTMLファイル生成処理を開始します")
-            template_dir = '/Users/aki5072/Library/Mobile Documents/com~apple~CloudDocs/47_CLUB_メルマガマニュアル/メルマガ原稿'
+            template_dir = '/Users/akiakko0526/Library/Mobile Documents/com~apple~CloudDocs/47_CLUB_メルマガマニュアル/メルマガ原稿'
             template_filename = 'WEBCAS_テンプレート_ビジュアルver.html' if 'ビジュアル' in campaign_type else 'WEBCAS_テンプレート_ver3.html'
             template_path = os.path.join(template_dir, template_filename)
             print(f"テンプレートパス: {template_path}")
