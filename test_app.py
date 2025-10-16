@@ -2,12 +2,13 @@ import streamlit as st
 import re
 from re import DOTALL  # DOTALLフラグを明示的にインポート
 import os  # osモジュールを追加
+import os  # osモジュールを追加
 import random
 import time
 from bs4 import BeautifulSoup, Comment
 from datetime import datetime
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -127,9 +128,10 @@ def scrape_product_data(url):
         options.page_load_strategy = 'eager'
 
         # User-Agentを最新に更新
-        options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
+        options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36')
 
-        service = Service(ChromeDriverManager().install())
+        log_file_path = os.path.join(os.path.dirname(__file__), "chromedriver.log")
+        service = Service(executable_path="/Users/akiakko0526/my_python_project/chromedriver-mac-arm64/chromedriver", log_output=log_file_path)
         driver = webdriver.Chrome(service=service, options=options)
 
         # タイムアウトの設定を調整
@@ -953,10 +955,23 @@ def generate_html_from_template(template_path, products_data, campaign_date, cam
 
         # 通常版の場合のみ、バナーが3つ以上あれば3つまたは4つをランダムに選択
         if 'ビジュアル' not in campaign_type and len(banner_data) >= 3:
-            num_to_place = random.choice([3, 4])
-            # 実際に配置するバナー数を、利用可能なバナー数と選択数のうち小さい方に制限
-            num_to_place = min(num_to_place, len(banner_data))
-            banner_data = random.sample(banner_data, num_to_place)
+            # 最初のバナーを確保
+            first_banner = banner_data[0]
+            # 残りのバナーから、必要な数（例: 2枚または3枚）をランダムに選択
+            remaining_banners = banner_data[1:]
+
+            num_to_select_from_remaining = random.choice([2, 3]) # 最初の1枚を除いた数
+            # 実際に選択するバナー数を、利用可能なバナー数と選択数のうち小さい方に制限
+            num_to_select_from_remaining = min(num_to_select_from_remaining, len(remaining_banners))
+
+            selected_remaining = random.sample(remaining_banners, num_to_select_from_remaining)
+
+            # 最初のバナーと選択したバナーを結合
+            final_banners = [first_banner] + selected_remaining
+
+            # 最終的なバナーの順序をランダムにする
+            random.shuffle(final_banners)
+            banner_data = final_banners
 
         # 商品名の整形（WEBCAS系のみ）
         if campaign_type in ["WEBCAS", "WEBCAS(ビジュアルver)"]:
