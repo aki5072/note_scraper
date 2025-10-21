@@ -7,6 +7,7 @@ import random
 import time
 from bs4 import BeautifulSoup, Comment
 from datetime import datetime
+
 from selenium import webdriver
 
 from selenium.webdriver.chrome.service import Service
@@ -118,6 +119,7 @@ def scrape_product_data(url):
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--lang=ja")
+        options.binary_location = "/Volumes/SSD - Data/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
         # メモリ使用量の最適化
         options.add_argument("--disable-extensions")
@@ -131,12 +133,11 @@ def scrape_product_data(url):
         options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36')
 
         log_file_path = os.path.join(os.path.dirname(__file__), "chromedriver.log")
-        service = Service(executable_path="/Users/akiakko0526/my_python_project/chromedriver-mac-arm64/chromedriver", log_output=log_file_path)
+        service = Service(executable_path="/Users/akiakko0526/my_python_project/chromedriver_manual/chromedriver-mac-arm64/chromedriver", log_output=log_file_path)
         driver = webdriver.Chrome(service=service, options=options)
 
         # タイムアウトの設定を調整
         driver.set_page_load_timeout(30)  # ページロードのタイムアウトを30秒に短縮
-        driver.implicitly_wait(3)  # 暗黙的な待機時間を3秒に短縮
 
         try:
             # カテゴリページ(ct数字)の場合、最小価格抽出
@@ -494,7 +495,7 @@ len(processed_text)
 
 ✅ 条件5：語句の使用制限
 - 「名店」「数量限定」などの語句は、説明文に記載がある場合のみ使用可能。
-- 安い商品ばかりではないので、「食卓」など、**家庭的な言葉は一切使用禁止です。**
+- 安い商品ばかりではないので、「食卓」「家庭」「自宅」など、**家庭的な言葉は一切使用禁止です。**
 - 以下の表現と類似の表現、壮大すぎる、カッコ良すぎる、キマってるような表現は**使用を禁止**します：
   - 「忘れられない味を。」
   - 「本当に美味しい〇〇を食べていますか。」
@@ -577,7 +578,7 @@ len(processed_text)
 
 ✅ 条件2：語句の使用制限
 - 「名店」「数量限定」などの語句は、説明文に記載がある場合のみ使用可能。
-- 安い商品ばかりではないので、「食卓」など、**家庭的な言葉は一切使用禁止です。**
+- 安い商品ばかりではないので、「食卓」「家庭」「自宅」など、**家庭的な言葉は一切使用禁止です。**
 - 以下の表現と類似の表現、壮大すぎる、カッコ良すぎる、キマってるような表現は**使用を禁止**します：
   - 「忘れられない味を。」
   - 「本当に美味しい〇〇を食べていますか。」
@@ -717,7 +718,7 @@ len(processed_text)
 
 ✅ 条件2：語句の使用制限
 - 「名店」「数量限定」などの語句は、説明文に記載がある場合のみ使用可能です。
-- 安い商品ばかりではないので、「食卓」など、**家庭的な言葉は一切使用禁止です。**
+- 安い商品ばかりではないので、「食卓」「家庭」「自宅」など、**家庭的な言葉は一切使用禁止です。**
 - 以下の表現と類似の表現、壮大すぎる、カッコ良すぎる、キマってるような表現は**使用を禁止**します：
   - 「忘れられない味を。」
   - 「本当に美味しい〇〇を食べていますか。」
@@ -734,15 +735,15 @@ len(processed_text)
 
   ・この機会をお見逃しなく。
   ・◯◯ですので、他にはない味わいをお見逃しなく。
-  ・老舗の職人が作る〇〇をご自宅で。
+  ・老舗の職人が作る〇〇をぜひ。
 
 - また、全体の構成・語り口の参考として、以下のような完成イメージも併せて参考にしてください：
     ■例1■
-    46年間変わらぬ味を届ける、<br>
-    岡山・牛窓の洋食職人中山さん。<br>
-    スパイス香るこだわりの一皿を、<br>
-    週末便でお届けします。<br>
-    ご自宅でじっくりご賞味ください。
+    物産展限定で、角煮餡を140％に増量した豚まんです。<br>
+    「餡で決まる」という店主の思いが詰まっています。<br>
+    皮との調和を考え抜いた、ぎりぎりの贅沢な餡の量です。<br>
+    週末限定のこの特別な豚まんを、ぜひお試しください。<br>
+    作りたてを冷蔵でお届けする、格別の味をお楽しみください。
 
     ■例2■
     野菜と牛肉の旨みだけで煮込んだ、<br>
