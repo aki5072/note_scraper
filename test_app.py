@@ -119,7 +119,7 @@ def scrape_product_data(url):
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--lang=ja")
-        options.binary_location = "/Volumes/SSD - Data/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        options.binary_location = "/Volumes/SSD-STICK/アプリケーション/Google Chrome.app/Contents/MacOS/Google Chrome"
 
         # メモリ使用量の最適化
         options.add_argument("--disable-extensions")
