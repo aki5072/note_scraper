@@ -15,6 +15,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
 # バナー入力をパースする補助関数
 def parse_banner_input(banner_text, selected_date):
     """
@@ -133,7 +134,7 @@ def scrape_product_data(url):
         options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36')
 
         log_file_path = os.path.join(os.path.dirname(__file__), "chromedriver.log")
-        service = Service(executable_path="/Users/akiakko0526/my_python_project/chromedriver_manual/chromedriver-mac-arm64/chromedriver", log_output=log_file_path)
+        service = Service(log_path=log_file_path)
         driver = webdriver.Chrome(service=service, options=options)
 
         # タイムアウトの設定を調整
