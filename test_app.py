@@ -337,11 +337,11 @@ def scrape_product_data(url):
 def parse_input_text(input_text):
     import re
     products = []
-    
+
     # Combined pattern to find either a quoted block or a standalone URL, preserving order.
     # Group 1: Quoted content, Group 2: Unquoted URL
     pattern = re.compile(r'"(.*?)"|(https?://[^\s"]+)', re.DOTALL)
-    
+
     # Handle the messy "" separator from spreadsheets by replacing it with a newline.
     processed_input = input_text.replace('""', '"\n"')
 
@@ -355,7 +355,7 @@ def parse_input_text(input_text):
             product_urls = []
             current_catchphrase_buffer = ""
             lines = [l.strip() for l in item.split('\n') if l.strip()]
-            
+
             for line in lines:
                 url_matches = list(re.finditer(r'https?://[^\s]+', line))
                 if url_matches:
@@ -375,7 +375,7 @@ def parse_input_text(input_text):
 
                         product_urls.append(url)
                         product_catchphrases.append(current_catchphrase_buffer if current_catchphrase_buffer else "")
-                        current_catchphrase_buffer = "" 
+                        current_catchphrase_buffer = ""
                         last_end = m.end()
 
                     text_after_last_url = line[last_end:].strip()
@@ -383,19 +383,19 @@ def parse_input_text(input_text):
                         current_catchphrase_buffer = (current_catchphrase_buffer + " " + text_after_last_url).strip()
                 else:
                     current_catchphrase_buffer = (current_catchphrase_buffer + " " + line).strip() if current_catchphrase_buffer else line
-            
+
             if product_urls:
                 if len(product_catchphrases) < len(product_urls):
                     product_catchphrases += [""] * (len(product_urls) - len(product_catchphrases))
                 elif len(product_urls) < len(product_catchphrases):
                     product_catchphrases = product_catchphrases[:len(product_urls)]
-                
+
                 products.append({'catchphrases': product_catchphrases, 'urls': product_urls})
 
         elif unquoted_url is not None:
             # This is a standalone, unquoted URL.
             products.append({'catchphrases': [''], 'urls': [unquoted_url.strip()]})
-            
+
     return products
 
 # 商品URLに UTM パラメータを付与する関数
@@ -414,7 +414,7 @@ def generate_product_urls(urls, campaign_type, campaign_date):
         normalized = url.strip()
         if not normalized.endswith("/"):
             normalized += "/"
-        
+
         # カテゴリページ(ct数字)のUTM付きURLを生成
         ct_match = re.search(r'/shopbrand/(ct\d+)', normalized)
         if ct_match:
@@ -988,7 +988,7 @@ def generate_html_from_template(template_path, products_data, campaign_date, cam
                     p_copy['description'] = ''
                 processed_products.append(p_copy)
             products_data = processed_products
-            
+
             def format_product_name(name):
                 # "]"の直後に<br>を挿入
                 name = re.sub(r'(】)', r'\1<br>', name)
@@ -1224,11 +1224,11 @@ def generate_html_from_template(template_path, products_data, campaign_date, cam
         with open(output_path, 'w', encoding='utf-8') as file:
             # レスポンシブ対応のCSSを追加
             css_style = '''
-        @media screen and (max-width: 900px) {
-            .order-button {
-                # width: 100% !important;
-                content: url(https://gigaplus.makeshop.jp/wazawaza/img/order_btn_new_v2.png);
-            }
+        # @media screen and (max-width: 900px) {
+        #     .order-button {
+        #         width: 100% !important;
+        #         content: url(https://gigaplus.makeshop.jp/wazawaza/img/order_btn_new_v2.png);
+        #     }
         }'''
 
             # CSSを<head>タグ内に挿入
@@ -1319,6 +1319,13 @@ def generate_visual_sections(products_data, is_visual):
                     else:
                         # 単一URLの場合、ctカテゴリのみ「〜」を付与
                         price_display = f"{price} 〜" if any(re.search(r'/shopbrand/ct\d+', u) for u in urls) else f"{price}"
+                        buttons_html = f'''
+        <div class="order-button" style="text-align: center; margin: 15px auto;">
+            <a href="{page_url}" target="_blank">
+                <img alt="注文ボタン" src="https://gigaplus.makeshop.jp/wazawaza/img/order_btn_new.png"
+                    style="width: 300px; margin: 10px auto;">
+            </a>
+        </div>'''
 
                 elif isinstance(first_product, (list, tuple)):
                     if len(first_product) >= 4:
@@ -1938,7 +1945,7 @@ if st.button("生成"):
             st.info(f"✅ 取得成功: {success_count} 件 / {len(descriptions)} 件")
             if len(error_descriptions) > 0:
                 st.error("【エラー】以下の商品の情報が取得できませんでした:\n" + "\n".join(error_descriptions))
-            
+
             # 選択されたプロンプトごとに個別のボックスで出力
             for prompt_key in selected_prompts:
                 st.subheader(f"🔸 {prompt_key}")
