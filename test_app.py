@@ -1231,12 +1231,14 @@ def generate_html_from_template(template_path, products_data, campaign_date, cam
         #     }
         }'''
 
-            # CSSを<head>タグ内に挿入
-            if '<head>' in template_content:
-                template_content = template_content.replace('</head>', f'    <style>{css_style}</style>\n</head>')
-            else:
-                # <head>タグがない場合は<body>の直前に挿入
-                template_content = template_content.replace('<body>', f'<style>{css_style}</style>\n<body>')
+            # "WEBCAS"の場合にのみCSSを適用
+            if campaign_type == "WEBCAS":
+                # CSSを<head>タグ内に挿入
+                if '<head>' in template_content:
+                    template_content = template_content.replace('</head>', f'    <style>{css_style}</style>\n</head>')
+                else:
+                    # <head>タグがない場合は<body>の直前に挿入
+                    template_content = template_content.replace('<body>', f'<style>{css_style}</style>\n<body>')
 
             file.write(template_content)
 
