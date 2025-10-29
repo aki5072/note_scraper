@@ -127,7 +127,7 @@ def save_as_markdown(note_key, note_info, all_notes_info, output_dir):
         for placeholder, final_markdown_link in replacements_after_md:
             body_md = body_md.replace(placeholder, final_markdown_link)
 
-        md_content = f"# {title}\n\n"
+        md_content = f"# {title}\n\n**URL:** {note_detail.get('note_url', '')}\n\n"
         if eyecatch_url:
             md_content += f"![eyecatch]({eyecatch_url})\n\n"
         md_content += "---\n\n"
