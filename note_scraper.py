@@ -11,8 +11,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- 設定 ---
-USER_ID = "mujihayashi_note"
+USER_ID = "genel"
 OUTPUT_DIR = f"./{USER_ID}_articles"
+
+def sanitize_filename(title):
+    """ファイル名として安全な文字列に変換する"""
+    # 英数字、日本語（ひらがな、カタカナ、漢字）、アンダースコア、ハイフン以外の文字をすべてアンダースコアに置換
+    cleaned_title = re.sub(r'[^a-zA-Z0-9_\-\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]+', "_", title)
+    # 連続するアンダースコアを1つにまとめる
+    cleaned_title = re.sub(r'__+', "_", cleaned_title)
+    # 先頭と末尾のアンダースコアを除去
+    cleaned_title = cleaned_title.strip("_")
+    return cleaned_title
 
 def get_all_notes_info(user_id):
     """指定されたユーザーの全記事キーとハッシュタグの情報を取得します。"""
@@ -34,7 +44,8 @@ def get_all_notes_info(user_id):
                 key = content.get("key")
                 if key:
                     hashtags = [tag["hashtag"]["name"] for tag in content.get("hashtags", []) if "hashtag" in tag and tag.get("hashtag")]
-                    all_notes[key] = {"hashtags": hashtags}
+                    title = content.get("name", "無題")
+                    all_notes[key] = {"hashtags": hashtags, "title": title}
 
             if data["isLastPage"]:
                 break
@@ -67,37 +78,7 @@ def get_note_detail(note_key):
         print(f"    -> エラー: 記事詳細の取得に失敗しました。 {note_key}, {e}")
         return None
 
-def create_related_article_card(note_data):
-    """取得した記事データから内部・外部リンク付きのMarkdownカードを生成します。"""
-    title = note_data.get("name", "無題")
-    note_key = note_data.get("key")
-    external_url = note_data.get("note_url", "")
-    eyecatch = note_data.get("eyecatch", "")
-    
-    # 内部リンク用のファイル名を生成
-    safe_title = re.sub(r'[\/:"*?<>|]+', "_", title)
-    internal_link = f"{note_key}_{safe_title}"
-
-    description = note_data.get("description", "")
-    if not description and "body" in note_data:
-        clean_body = re.sub("<.*?>", "", note_data["body"]).replace('\n', ' ').strip()
-        description = clean_body[:100] + '...' if len(clean_body) > 100 else clean_body
-
-    user_name = note_data.get("user", {}).get("nickname", "")
-    publish_date = note_data.get("publish_at", "")[:10]
-
-    card = f"""
-> ---
-> ### [{title}]({internal_link}) [🌐]({external_url})\n"""
-    if eyecatch:
-        card += f"> ![thumbnail]({eyecatch})\n"
-    card += f">\n> {description}\n>\n"
-    if user_name and publish_date:
-        card += f"> *{user_name} - {publish_date}*\n"
-    card += "> ---"
-    return card
-
-def save_as_markdown(note_key, note_info, output_dir):
+def save_as_markdown(note_key, note_info, all_notes_info, output_dir):
     """記事データを処理し、Markdownファイルとして保存します。"""
     try:
         note_detail = get_note_detail(note_key)
@@ -113,6 +94,9 @@ def save_as_markdown(note_key, note_info, output_dir):
         hashtags = sorted(list(set(hashtags_from_list + hashtags_from_detail)))
 
         soup = BeautifulSoup(body_html, "html.parser")
+        
+        replacements_after_md = []
+
         for figure in soup.find_all("figure", attrs={"embedded-service": "note"}):
             related_key = figure.get("data-identifier")
             if not related_key or related_key == note_key: continue
@@ -122,12 +106,26 @@ def save_as_markdown(note_key, note_info, output_dir):
             related_detail = get_note_detail(related_key)
 
             if related_detail:
-                card_md = create_related_article_card(related_detail)
-                figure.replace_with(card_md)
+                original_related_title = all_notes_info.get(related_key, {}).get("title", related_detail.get("name", "無題"))
+                safe_related_title = sanitize_filename(original_related_title)
+                internal_link_target = f"{related_key}_{safe_related_title}"
+                external_url = related_detail.get("note_url", "")
+                related_eyecatch_url = related_detail.get("eyecatch", "")
+
+                final_markdown_link = f"[[{internal_link_target}]][🌐]({external_url})"
+                if related_eyecatch_url:
+                    final_markdown_link += f"\n\n![thumbnail]({related_eyecatch_url})\n"
+
+                placeholder = f"<!-- RELATED_NOTE_PLACEHOLDER_{related_key} -->"
+                figure.replace_with(placeholder)
+                replacements_after_md.append((placeholder, final_markdown_link))
 
         h = html2text.HTML2Text()
         h.body_width = 0
         body_md = h.handle(str(soup))
+
+        for placeholder, final_markdown_link in replacements_after_md:
+            body_md = body_md.replace(placeholder, final_markdown_link)
 
         md_content = f"# {title}\n\n"
         if eyecatch_url:
@@ -140,7 +138,7 @@ def save_as_markdown(note_key, note_info, output_dir):
             for tag in hashtags:
                 md_content += f"- {tag}\n"
 
-        safe_title = re.sub(r'[\/:"*?<>|]+', "_", title)
+        safe_title = sanitize_filename(title)
         file_name = f"{note_key}_{safe_title}.md"
         file_path = os.path.join(output_dir, file_name)
 
@@ -174,7 +172,7 @@ def main():
     for i, note_key in enumerate(note_keys):
         print(f"({i + 1}/{total_notes}) 記事を処理中: {note_key}")
         note_info = all_notes_info.get(note_key, {})
-        save_as_markdown(note_key, note_info, OUTPUT_DIR)
+        save_as_markdown(note_key, note_info, all_notes_info, OUTPUT_DIR)
         time.sleep(3)
 
     print("\nすべての処理が完了しました。")
